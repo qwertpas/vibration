@@ -1,0 +1,18 @@
+{
+  "name": "Motor Control",
+  "version": "1.0",
+  "new_install_prompt_erase": false,
+  "md5": "7461a5b0275383878560a8c79b5ea905",
+  "sha256": "390f7b2014d326aacb11b0aed36b19286c7af92bc2cb5e6d66c6c1ded92a1cbd",
+  "builds": [
+    {
+      "chipFamily": "ESP32-S3",
+      "parts": [
+        {
+          "path": "vibration.bin",
+          "offset": 0
+        }
+      ]
+    }
+  ]
+}

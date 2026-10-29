@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f3f2ed">
+  <title>Motor Control</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+  <script type="module" src="install.js"></script>
+</head>
+<body>
+  <main>
+    <header><h1><svg viewBox="0 0 40 32" aria-hidden="true"><path d="M2 16h8l5-11 10 22 5-11h8"/></svg>Motor Control</h1><a href="https://github.com/qwertpas/vibration" target="_blank" rel="noreferrer">Source ↗</a></header>
+    <section class="connection" aria-label="USB connection">
+      <div><span class="label">ESP32-S3 SUPERMINI</span><p><span id="dot"></span><strong id="connection">Disconnected</strong></p></div>
+      <div class="buttons"><button id="connect">Connect USB</button><button id="connect-ble" class="primary">Connect BLE</button></div>
+    </section>
+    <p id="message" role="status" hidden></p>
+    <div class="toolbar"><label class="keyboard"><input id="keyboard" type="checkbox">Keyboard control</label><span id="hint">Sliders drive motors directly</span><button id="stop" class="danger">Stop <kbd>Esc</kbd></button></div>
+    <div class="motors">
+      <section class="motor" aria-labelledby="title-1">
+        <div class="row"><h2 id="title-1">Motor 1</h2><span class="pins">GPIO 10 / 11</span></div>
+        <div class="value"><output id="value-1" for="motor-1">0</output><span>%</span></div>
+        <label class="sr-only" for="motor-1">Motor 1 speed (%)</label>
+        <div class="slider"><input id="motor-1" type="range" min="-100" max="100" step="1" value="0"></div>
+        <div class="scale"><span>−100% · Reverse</span><span>0</span><span>Forward · +100%</span></div>
+        <div class="motor-bottom"><span class="keys"><kbd id="left">←</kbd><kbd id="right">→</kbd></span><span class="running" id="state-1">Stopped</span><button id="zero-1">Zero</button></div>
+      </section>
+      <section class="motor" aria-labelledby="title-2">
+        <div class="row"><h2 id="title-2">Motor 2</h2><span class="pins">GPIO 12 / 13</span></div>
+        <div class="value"><output id="value-2" for="motor-2">0</output><span>%</span></div>
+        <label class="sr-only" for="motor-2">Motor 2 speed (%)</label>
+        <div class="slider"><input id="motor-2" type="range" min="-100" max="100" step="1" value="0"></div>
+        <div class="scale"><span>−100% · Reverse</span><span>0</span><span>Forward · +100%</span></div>
+        <div class="motor-bottom"><span class="keys"><kbd id="down">↓</kbd><kbd id="up">↑</kbd></span><span class="running" id="state-2">Stopped</span><button id="zero-2">Zero</button></div>
+      </section>
+    </div>
+    <p class="note" id="key-note" hidden>Hold arrows to run · Slider magnitude sets speed · Release to stop</p>
+    <section class="firmware" aria-label="Firmware updates">
+      <esp-web-install-button manifest="firmware/manifest.json"><button id="install" slot="activate">Install via USB</button><span slot="unsupported"></span></esp-web-install-button>
+      <button id="update-ble" disabled>Update via BLE</button><progress id="progress" max="100" value="0" hidden aria-label="Firmware update progress"></progress><span id="update-state" role="status"></span>
+    </section>
+  </main>
+</body>
+</html>
