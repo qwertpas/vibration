@@ -26,7 +26,7 @@ const commands = [];
 let board, closed = false, ignore = false;
 const bleListeners = {};
 let updateBytes = 0, expectedSize = 0, updateComplete = false, corrupt = false, cancel = false;
-const firmware = new Uint8Array([0xe9, 1, 2, 3, ...new Array(300).fill(4)]);
+const firmware = new Uint8Array([0xe9, 1, 2, 3, ...new Array(1024).fill(4)]);
 const sha256 = Buffer.from(await webcrypto.subtle.digest('SHA-256', firmware)).toString('hex');
 const bleReply = {
   addEventListener(type, fn) { bleListeners[type] = fn; },

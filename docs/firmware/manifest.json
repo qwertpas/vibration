@@ -1,9 +1,9 @@
 {
   "name": "Motor Control",
-  "version": "390f7b20",
+  "version": "75a69489",
   "new_install_prompt_erase": false,
-  "md5": "7461a5b0275383878560a8c79b5ea905",
-  "sha256": "390f7b2014d326aacb11b0aed36b19286c7af92bc2cb5e6d66c6c1ded92a1cbd",
+  "md5": "f074c23977308ec3b7e0ed9d13959e4c",
+  "sha256": "75a6948951c62909f4864b1636c17e947a70dff4805837499a540eb1962130a0",
   "builds": [
     {
       "chipFamily": "ESP32-S3",

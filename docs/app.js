@@ -275,10 +275,10 @@ $('update-ble').addEventListener('click', async () => {
     const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), (n) => n.toString(16).padStart(2, '0')).join('');
     if (hash !== manifest.sha256) throw new Error('Firmware checksum mismatch.');
     await request(`BEGIN ${bytes.length} ${manifest.md5}`);
-    for (let offset = 0; offset < bytes.length; offset += 128) {
+    for (let offset = 0; offset < bytes.length; offset += 512) {
       if (cancelUpdate) throw new Error('Update cancelled.');
-      await bleUpdate.writeValueWithResponse(bytes.subarray(offset, offset + 128));
-      const progress = Math.round(Math.min(offset + 128, bytes.length) * 100 / bytes.length);
+      await bleUpdate.writeValueWithResponse(bytes.subarray(offset, offset + 512));
+      const progress = Math.round(Math.min(offset + 512, bytes.length) * 100 / bytes.length);
       $('progress').value = progress;
       $('update-state').textContent = `Updating · ${progress}%`;
     }

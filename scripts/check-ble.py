@@ -36,6 +36,7 @@ async def main():
                 return data
 
     async with BleakClient(device) as client:
+        print(f"BLE MTU: {client.mtu_size}", flush=True)
         await client.start_notify(reply_id, receive)
         initial = await request(client, "STOP")
         try:
@@ -63,8 +64,8 @@ async def main():
                 return
             assert not (await request(client, "BEGIN", f"{len(image)} {md5}"))["error"]
             last_progress = -1
-            for offset in range(0, len(image), 128):
-                await client.write_gatt_char(update_id, image[offset:offset + 128], response=True)
+            for offset in range(0, len(image), 512):
+                await client.write_gatt_char(update_id, image[offset:offset + 512], response=True)
                 progress = offset * 10 // len(image)
                 if progress != last_progress:
                     print(f"BLE update: {progress * 10}%", flush=True)

@@ -136,6 +136,10 @@ class Firmware : public BLECharacteristicCallbacks {
 };
 
 class Connections : public BLEServerCallbacks {
+    void onConnect(BLEServer *server, ble_gap_conn_desc *connection) override {
+        // Request 15–30 ms intervals for responsive control and firmware transfer.
+        server->updateConnParams(connection->conn_handle, 12, 24, 0, 200);
+    }
     void onConnect(BLEServer *) override {
         xSemaphoreTake(lock, portMAX_DELAY);
         bleConnected = true;
