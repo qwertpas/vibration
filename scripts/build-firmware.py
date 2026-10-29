@@ -23,7 +23,7 @@ subprocess.run([
 ], check=True)
 data = (destination / "app.bin").read_bytes()
 manifest = {
-    "name": "Motor Control", "version": "1.0", "new_install_prompt_erase": False,
+    "name": "Motor Control", "version": hashlib.sha256(data).hexdigest()[:8], "new_install_prompt_erase": False,
     "md5": hashlib.md5(data).hexdigest(), "sha256": hashlib.sha256(data).hexdigest(),
     "builds": [{"chipFamily": "ESP32-S3", "parts": [{"path": "vibration.bin", "offset": 0}]}],
 }
