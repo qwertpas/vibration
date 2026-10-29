@@ -2,7 +2,9 @@
 import asyncio
 import hashlib
 import json
+import statistics
 import sys
+import time
 from pathlib import Path
 
 from bleak import BleakClient, BleakScanner
@@ -18,8 +20,11 @@ async def main():
     replies = asyncio.Queue()
     buffer = bytearray()
     number = 0
+    notifications = 0
 
     def receive(_, data):
+        nonlocal notifications
+        notifications += 1
         buffer.extend(data)
         while b"\n" in buffer:
             line, _, rest = buffer.partition(b"\n")
@@ -40,6 +45,18 @@ async def main():
         await client.start_notify(reply_id, receive)
         initial = await request(client, "STOP")
         try:
+            if "--latency" in sys.argv:
+                samples = []
+                count = notifications
+                for _ in range(20):
+                    start = time.perf_counter()
+                    result = await request(client, "SET", "0 0")
+                    assert not result["error"] and result["motors"] == [0, 0], result
+                    samples.append((time.perf_counter() - start) * 1000)
+                print(f"BLE round trip: median {statistics.median(samples):.1f} ms, "
+                      f"max {max(samples):.1f} ms, "
+                      f"{(notifications - count) / len(samples):.1f} notifications/reply")
+                return
             for a, b in [(8, 0), (-8, 0), (0, 8), (0, -8), (8, -8), (-8, 8)]:
                 result = await request(client, "SET", f"{a} {b}")
                 assert not result["error"] and result["motors"] == [a, b], result

@@ -49,11 +49,13 @@ void status(unsigned id, const char *error = "", bool ble = false) {
                   (unsigned long)ledcRead(12), (unsigned long)ledcRead(13),
                   (unsigned long)esp_ota_get_running_partition()->address, error);
     if (!ble) { Serial.print(text); return; }
-    // Keep notifications within the minimum BLE MTU, including on first connect.
-    for (size_t offset = 0; offset < strlen(text); offset += 20) {
-        reply->setValue((uint8_t *)text + offset, min(size_t(20), strlen(text) - offset));
+    auto server = BLEDevice::getServer();
+    const size_t packetSize = server->getPeerMTU(server->getConnId()) - 3;
+    const size_t size = strlen(text);
+    // Use the negotiated MTU and let the BLE stack schedule transmission.
+    for (size_t offset = 0; offset < size; offset += packetSize) {
+        reply->setValue((uint8_t *)text + offset, min(packetSize, size - offset));
         reply->notify();
-        delay(3);
     }
 }
 
