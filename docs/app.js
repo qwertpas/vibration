@@ -13,6 +13,7 @@ let device, bleCommand, bleReply, bleUpdate;
 let transport = 'usb', bleBuffer = '', updating = false, cancelUpdate = false;
 let connected = false, opening = false, closing = false, sending = false;
 let pending = null, sequence = 0;
+let connection = 0, lastControl = 0, lastAck = 0, lastReplyAt = 0;
 
 function message(text = '') {
   $('message').textContent = text;
@@ -62,7 +63,15 @@ function speeds() {
 function receive(line) {
   let data;
   try { data = JSON.parse(line); } catch { return; }
-  if (data.app !== 'vibration' || data.id !== waiting?.id) return;
+  if (data.app !== 'vibration') return;
+  if (!waiting || data.id !== waiting.id) {
+    if (!connected || updating || data.id <= lastAck || data.id > lastControl) return;
+    lastAck = data.id;
+    lastReplyAt = Date.now();
+    if (data.error) { message(data.error); void disconnect(false); }
+    else if (data.id === lastControl) showMotors(data.motors);
+    return;
+  }
   const { resolve, reject, timer } = waiting;
   waiting = null;
   clearTimeout(timer);
@@ -134,16 +143,20 @@ async function send(values = speeds()) {
   pending = values;
   if (sending) return;
   sending = true;
+  const current = connection;
   try {
-    while (pending && connected && !closing) {
+    while (pending && connected && !closing && current === connection) {
       const next = pending;
       pending = null;
-      await request(next);
+      if (lastAck === lastControl) lastReplyAt = Date.now();
+      lastControl = ++sequence;
+      // Keep one GATT write in flight and only the latest desired value pending.
+      // Status notifications must not block a newer slider value or key release.
+      await writeBytes(new TextEncoder().encode(`SET ${lastControl} ${next[0]} ${next[1]}\n`));
     }
   } catch (error) {
-    message(error.message);
-    await disconnect(false);
-  } finally { sending = false; }
+    if (current === connection) { message(error.message); await disconnect(false); }
+  } finally { if (current === connection) sending = false; }
 }
 
 function stop(reset = true) {
@@ -173,7 +186,14 @@ function bleDisconnected() {
 }
 
 function startHeartbeat() {
+  lastControl = lastAck = 0;
+  lastReplyAt = Date.now();
   heartbeat = setInterval(() => {
+    if (lastAck < lastControl && Date.now() - lastReplyAt >= 500) {
+      message(`${transport.toUpperCase()} stopped responding.`);
+      void disconnect(false);
+      return;
+    }
     if (!sending && !document.hidden && document.hasFocus()) void send();
   }, 100);
 }
@@ -216,8 +236,10 @@ async function connect(kind = 'usb') {
 async function disconnect(finalStop = true) {
   if (closing) return;
   closing = true;
+  connection++;
   clearInterval(heartbeat);
   connected = false;
+  sending = false;
   pending = null;
   held.clear();
   sliders.forEach((slider) => { slider.value = 0; });

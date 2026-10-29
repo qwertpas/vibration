@@ -25,6 +25,7 @@ const packets = [];
 const commands = [];
 let board, closed = false, ignore = false;
 const bleListeners = {};
+let holdReplies = false, heldReplies = [], blockWrite = false, blockedWrite;
 let updateBytes = 0, expectedSize = 0, updateComplete = false, corrupt = false, cancel = false;
 const firmware = new Uint8Array([0xe9, 1, 2, 3, ...new Array(1024).fill(4)]);
 const sha256 = Buffer.from(await webcrypto.subtle.digest('SHA-256', firmware)).toString('hex');
@@ -35,6 +36,7 @@ const bleReply = {
 };
 const bleCommand = {
   async writeValueWithResponse(bytes) {
+    if (blockWrite) await new Promise((resolve, reject) => { blockedWrite = { resolve, reject }; });
     const [command, id, ...args] = new TextDecoder().decode(bytes).trim().split(' ');
     commands.push(command);
     let motors = [0, 0];
@@ -42,10 +44,14 @@ const bleCommand = {
     if (command === 'BEGIN') { expectedSize = Number(args[0]); updateBytes = 0; }
     if (command === 'FINISH') { assert.equal(updateBytes, expectedSize); updateComplete = true; }
     const response = new TextEncoder().encode(`${JSON.stringify({app: 'vibration', id: Number(id), motors, error: ''})}\n`);
-    for (let offset = 0; offset < response.length; offset += 20) {
-      const chunk = response.slice(offset, offset + 20);
-      bleListeners.characteristicvaluechanged({ target: { value: new DataView(chunk.buffer) } });
-    }
+    const deliver = () => {
+      for (let offset = 0; offset < response.length; offset += 20) {
+        const chunk = response.slice(offset, offset + 20);
+        bleListeners.characteristicvaluechanged({ target: { value: new DataView(chunk.buffer) } });
+      }
+    };
+    if (holdReplies) heldReplies.push(deliver);
+    else deliver();
   },
 };
 const bleUpdate = {
@@ -177,6 +183,24 @@ try {
   assert.deepEqual(last(), [0, 32]);
   await key('keyup', 'ArrowUp');
   assert.deepEqual(last(), [0, 0]);
+  holdReplies = true;
+  await key('keydown', 'ArrowRight');
+  await key('keyup', 'ArrowRight');
+  assert.deepEqual(last(), [0, 0], 'Key release must not wait for an earlier status reply');
+  holdReplies = false;
+  heldReplies.forEach((deliver) => deliver());
+  heldReplies = [];
+  assert.equal(element('state-1').textContent, 'Stopped', 'Old acknowledgements must not restore stale UI state');
+  blockWrite = true;
+  await key('keydown', 'ArrowUp');
+  await key('keyup', 'ArrowUp');
+  await delay(650);
+  assert.equal(device.gatt.connected, false, 'A stalled GATT write must disconnect without waiting for its promise');
+  blockWrite = false;
+  await event(element('connect-ble'), 'click');
+  blockedWrite.reject(new Error('Old connection closed'));
+  await delay(5);
+  assert.equal(device.gatt.connected, true, 'A failed write from an old connection must not disconnect a new one');
   corrupt = true;
   await event(element('update-ble'), 'click');
   assert.equal(commands.includes('BEGIN'), false, 'Reject a corrupt firmware download before flashing');
