@@ -167,7 +167,7 @@ try {
   ignore = true;
   await slide(1, 20);
   await delay(1400);
-  assert.equal(closed, true, 'Missing acknowledgement must close the port');
+  assert.equal(closed, true, 'Missing USB acknowledgement must close the port');
   ignore = false;
   await event(element('connect-ble'), 'click');
   assert.equal(device.gatt.connected, true);
